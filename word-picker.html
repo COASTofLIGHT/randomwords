@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Random Word Picker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --mist: #EDF3F2;
+    --ink: #10303A;
+    --ink-soft: #456670;
+    --line: #5F808A;
+    --sea: #17677A;
+    --sea-deep: #124F5E;
+    --focus: #0B62A4;
+    --font: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--mist);
+    color: var(--ink);
+    font-family: var(--font);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  .page {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: clamp(1rem, 3vw, 2.25rem);
+  }
+
+  header h1 {
+    margin: 0;
+    font-size: clamp(1.7rem, 3.2vw, 2.5rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+  }
+
+  header p {
+    margin: 0.35rem 0 0;
+    color: var(--ink-soft);
+    font-size: 1rem;
+  }
+
+  /* Controls */
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem 1.75rem;
+    margin: 1.5rem 0 1.25rem;
+  }
+
+  .count {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem 0.9rem;
+  }
+
+  .count-label { font-weight: 600; }
+
+  .count-options { display: flex; gap: 0.4rem; }
+
+  .count-options label { position: relative; display: block; }
+
+  .count-options input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .count-options span {
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border: 2px solid var(--line);
+    border-radius: 0.6rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+  }
+
+  .count-options input:not(:checked):hover + span { border-color: var(--ink); }
+
+  .count-options input:checked + span {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--mist);
+  }
+
+  .count-options input:focus-visible + span {
+    outline: 3px solid var(--focus);
+    outline-offset: 3px;
+  }
+
+  .primary {
+    height: 2.75rem;
+    padding: 0 1.6rem;
+    border: 0;
+    border-radius: 0.6rem;
+    background: var(--sea);
+    color: #fff;
+    font: inherit;
+    font-size: 1.05rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .primary:hover { background: var(--sea-deep); }
+  .primary:active { transform: translateY(1px); }
+  .primary:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+
+  /* Word tiles */
+  .grid {
+    --cols: 3;
+    --rows: 1;
+    --gap: clamp(0.6rem, 1.6vw, 1.1rem);
+    --chrome: 18rem;
+    --h: clamp(7.5rem, calc((100vh - var(--chrome) - (var(--rows) - 1) * var(--gap)) / var(--rows)), 36rem);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--gap);
+  }
+
+  @supports (height: 100svh) {
+    .grid {
+      --h: clamp(7.5rem, calc((100svh - var(--chrome) - (var(--rows) - 1) * var(--gap)) / var(--rows)), 36rem);
+    }
+  }
+
+  .tile {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    flex: 0 0 calc((100% - (var(--cols) - 1) * var(--gap)) / var(--cols));
+    min-width: 0;
+    height: var(--h);
+    padding: clamp(0.9rem, 2vw, 1.6rem);
+    border: 0;
+    border-radius: 0.9rem;
+    overflow: hidden;
+    background: var(--c);
+    color: var(--ink);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  .tile:hover { filter: brightness(0.96); }
+  .tile:focus-visible { outline: 4px solid var(--focus); outline-offset: 3px; }
+
+  .swap {
+    position: absolute;
+    top: 0.85rem;
+    left: 1.1rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .tile:hover .swap,
+  .tile:focus-visible .swap { opacity: 0.7; }
+
+  .word {
+    display: block;
+    width: 100%;
+    font-size: 4rem;
+    font-weight: 700;
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+    overflow-wrap: normal;
+    hyphens: none;
+  }
+
+  @keyframes settle {
+    from { opacity: 0; transform: translateY(0.4rem); }
+    to   { opacity: 1; transform: none; }
+  }
+  .word.fresh { animation: settle 0.22s ease-out; }
+
+  .hint {
+    margin: 1.25rem 0 0;
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+  }
+
+  .sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  @media (max-width: 640px) {
+    .grid { --chrome: 24rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .word.fresh { animation: none; }
+    .count-options span,
+    .swap { transition: none; }
+  }
+</style>
+</head>
+<body>
+<main class="page">
+  <header>
+    <h1>Word picker</h1>
+    <p>Objects and animals from the Cambridge A2 Key list.</p>
+  </header>
+
+  <div class="controls">
+    <div class="count" role="radiogroup" aria-labelledby="count-label">
+      <span class="count-label" id="count-label">How many words?</span>
+      <div class="count-options" id="count-options"></div>
+    </div>
+    <button type="button" class="primary" id="new-words">New words</button>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <p class="hint">Click a word to swap just that one. Changing the number keeps the words you already have.</p>
+  <p class="sr" role="status" id="status"></p>
+</main>
+
+<script>
+/* ---------------------------------------------------------------
+   Word list, grouped by category so a category filter can be added
+   later. For now every category is merged into one pool.
+   Edit freely: add or delete words in any group.
+---------------------------------------------------------------- */
+const WORDS = {
+  animals: [
+    "bear", "bee", "beetle", "bird", "butterfly", "camel", "cat", "chicken", "cow", "crocodile",
+    "dinosaur", "dog", "dolphin", "donkey", "duck", "eagle", "elephant", "fish", "frog", "giraffe",
+    "goat", "hippo", "horse", "jellyfish", "kangaroo", "kitten", "lion", "lizard", "monkey", "mouse",
+    "octopus", "panda", "parrot", "penguin", "polar bear", "puppy", "rabbit", "shark", "sheep", "snail",
+    "snake", "spider", "swan", "tiger", "tortoise", "whale", "zebra",
+    "tail", "wing", "fur", "nest"
+  ],
+  food: [
+    "apple", "banana", "bean", "biscuit", "bread", "burger", "butter", "cake", "candy", "carrot",
+    "cereal", "cheese", "chilli", "chips", "chocolate", "coffee", "cola", "cookie", "curry", "egg",
+    "garlic", "grape", "honey", "ice cream", "jam", "juice", "lemon", "lemonade", "mango", "melon",
+    "milk", "mineral water", "mushroom", "omelette", "onion", "orange", "pasta", "pear", "pepper",
+    "pizza", "potato", "rice", "salad", "salt", "sandwich", "sauce", "sausage", "soup", "steak",
+    "strawberry", "sugar", "tea", "toast", "tomato", "water", "yogurt"
+  ],
+  clothes: [
+    "belt", "blouse", "boot", "bracelet", "cap", "coat", "dress", "earring", "glasses", "glove",
+    "hat", "hoodie", "jacket", "jeans", "jewellery", "jumper", "necklace", "raincoat", "ring", "scarf",
+    "shirt", "shoe", "shorts", "skirt", "sock", "suit", "sunglasses", "sweater", "swimsuit", "T-shirt",
+    "tie", "tights", "trainers", "trousers", "umbrella", "uniform", "watch"
+  ],
+  travel: [
+    "backpack", "bag", "handbag", "map", "passport", "purse", "rucksack", "suitcase", "ticket", "wallet"
+  ],
+  home: [
+    "alarm clock", "armchair", "bath", "bed", "bin", "blanket", "bookcase", "bookshelf", "cabinet",
+    "carpet", "chair", "clock", "closet", "comb", "cooker", "cupboard", "curtain", "desk", "door",
+    "drawer", "fridge", "key", "lamp", "mirror", "oven", "pillow", "shelf", "shampoo", "shower", "sink",
+    "soap", "sofa", "stairs", "table", "toilet", "toothbrush", "towel", "wardrobe", "washing machine",
+    "window"
+  ],
+  kitchen: [
+    "bottle", "bowl", "box", "cup", "dish", "fork", "glass", "knife", "mug", "plate", "spoon"
+  ],
+  technology: [
+    "battery", "camera", "CD player", "computer", "DVD player", "headphones", "keyboard", "laptop",
+    "microphone", "mobile phone", "PC", "printer", "radio", "screen", "speaker", "tablet", "telephone",
+    "television", "video game"
+  ],
+  school: [
+    "blackboard", "book", "calendar", "card", "comic", "dictionary", "diary", "envelope", "eraser",
+    "file", "folder", "guidebook", "letter", "magazine", "newspaper", "notebook", "painting", "paper",
+    "pen", "pencil", "pencil case", "photo", "picture", "postcard", "poster", "rubber", "ruler",
+    "scissors", "stamp", "textbook"
+  ],
+  play: [
+    "ball", "balloon", "bat", "board game", "chess", "doll", "drum", "guitar", "instrument", "kite",
+    "net", "piano", "puzzle", "racket", "skateboard", "snowboard", "surfboard", "tent", "toy", "violin"
+  ],
+  vehicles: [
+    "aeroplane", "ambulance", "bicycle", "bike", "boat", "bus", "car", "coach", "helicopter", "lorry",
+    "motorbike", "police car", "scooter", "ship", "taxi", "train", "tram"
+  ],
+  nature: [
+    "beach", "cloud", "desert", "field", "flower", "forest", "grass", "hill", "island", "lake", "moon",
+    "mountain", "ocean", "plant", "rainforest", "river", "rock", "sea", "star", "sun", "tree", "wood"
+  ],
+  body: [
+    "arm", "beard", "brain", "ear", "eye", "face", "finger", "foot", "hair", "hand", "head", "heart",
+    "leg", "mouth", "neck", "nose", "stomach", "toe", "tooth"
+  ],
+  places: [
+    "airport", "bank", "bridge", "castle", "cinema", "circus", "factory", "farm", "garage", "hospital",
+    "hotel", "library", "market", "museum", "park", "playground", "restaurant", "school", "shop",
+    "stadium", "station", "supermarket", "theatre", "zoo"
+  ],
+  jobs: [
+    "actor", "artist", "chef", "cleaner", "dentist", "doctor", "driver", "engineer", "farmer",
+    "journalist", "mechanic", "nurse", "photographer", "pilot", "scientist", "singer", "teacher", "waiter"
+  ]
+};
+
+const ALL = [...new Set(Object.values(WORDS).flat())];
+
+/* Tile colours stay with the position, so "the green one" is always the first tile. */
+const COLOURS = ["#A8D5CB", "#F2D9A6", "#F4B5A0", "#C9C3EA", "#A9CCEB", "#F0C2D3", "#C7DE9F"];
+const MAX = COLOURS.length;
+
+const grid = document.getElementById("grid");
+const statusEl = document.getElementById("status");
+const options = document.getElementById("count-options");
+
+let count = loadCount();
+let shown = [];
+let deck = [];
+
+/* ---------- picking ---------- */
+
+function shuffle(list) {
+  for (let i = list.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [list[i], list[j]] = [list[j], list[i]];
+  }
+  return list;
+}
+
+/* Draws from a shuffled deck so words don't come round again until the pool has been used. */
+function draw(avoid) {
+  for (let pass = 0; pass < 2; pass++) {
+    while (deck.length) {
+      const word = deck.pop();
+      if (!avoid.includes(word)) return word;
+    }
+    deck = shuffle(ALL.slice());
+  }
+  return ALL[Math.floor(Math.random() * ALL.length)];
+}
+
+function newWords() {
+  const previous = shown.slice();
+  const next = [];
+  for (let i = 0; i < count; i++) next.push(draw(next.concat(previous)));
+  shown = next;
+  render();
+}
+
+function swap(index) {
+  shown[index] = draw(shown);
+  render();
+}
+
+function setCount(n) {
+  count = n;
+  while (shown.length < count) shown.push(draw(shown));
+  shown.length = count;
+  saveCount();
+  syncRadios();
+  render();
+}
+
+/* ---------- storage ---------- */
+
+function loadCount() {
+  try {
+    const value = parseInt(localStorage.getItem("wordpicker.count"), 10);
+    if (value >= 1 && value <= MAX) return value;
+  } catch (e) { /* storage unavailable */ }
+  return 3;
+}
+
+function saveCount() {
+  try { localStorage.setItem("wordpicker.count", String(count)); } catch (e) { /* ignore */ }
+}
+
+/* ---------- rendering ---------- */
+
+function makeTile(index) {
+  const tile = document.createElement("button");
+  tile.type = "button";
+  tile.className = "tile";
+  tile.style.setProperty("--c", COLOURS[index]);
+  tile.innerHTML = '<span class="swap" aria-hidden="true">Swap</span><span class="word"></span>';
+  tile.addEventListener("click", () => swap([...grid.children].indexOf(tile)));
+  return tile;
+}
+
+function render() {
+  while (grid.children.length < shown.length) grid.appendChild(makeTile(grid.children.length));
+  while (grid.children.length > shown.length) grid.lastElementChild.remove();
+
+  [...grid.children].forEach((tile, i) => {
+    const word = tile.querySelector(".word");
+    if (word.textContent !== shown[i]) {
+      word.textContent = shown[i];
+      tile.setAttribute("aria-label", shown[i] + ", click to swap");
+      word.classList.remove("fresh");
+      void word.offsetWidth;
+      word.classList.add("fresh");
+    }
+  });
+
+  layout();
+  statusEl.textContent = "Words: " + shown.join(", ");
+}
+
+function layout() {
+  const n = shown.length;
+  const w = window.innerWidth;
+  let cols;
+  if (w < 640) cols = Math.min(n, 2);
+  else if (w < 960) cols = n <= 3 ? n : (n === 7 ? 4 : (n === 4 ? 2 : 3));
+  else cols = { 1: 1, 2: 2, 3: 3, 4: 4, 5: 3, 6: 3, 7: 4 }[n];
+
+  grid.style.setProperty("--cols", cols);
+  grid.style.setProperty("--rows", Math.ceil(n / cols));
+  fit();
+}
+
+/* One shared size for every word, shrunk tile-by-tile only when a long word would overflow. */
+function fit() {
+  const tile = grid.firstElementChild;
+  if (!tile) return;
+  const style = getComputedStyle(tile);
+  const innerW = tile.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+  const innerH = tile.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+  const base = Math.max(22, Math.min(innerH * 0.36, innerW * 0.24, 170));
+
+  grid.querySelectorAll(".word").forEach((word) => {
+    let size = base;
+    word.style.fontSize = size + "px";
+    let guard = 0;
+    while (guard++ < 40 && size > 20 && word.scrollWidth > word.clientWidth + 1) {
+      size *= 0.94;
+      word.style.fontSize = size + "px";
+    }
+  });
+}
+
+/* ---------- controls ---------- */
+
+for (let n = 1; n <= MAX; n++) {
+  const label = document.createElement("label");
+  label.innerHTML =
+    '<input type="radio" name="count" value="' + n + '"><span>' + n + "</span>";
+  label.querySelector("input").addEventListener("change", () => setCount(n));
+  options.appendChild(label);
+}
+
+function syncRadios() {
+  options.querySelectorAll("input").forEach((input) => {
+    input.checked = Number(input.value) === count;
+  });
+}
+
+document.getElementById("new-words").addEventListener("click", newWords);
+
+/* Keys: 1–7 change the number, N picks new words. */
+document.addEventListener("keydown", (event) => {
+  if (event.ctrlKey || event.metaKey || event.altKey) return;
+  if (/^[1-7]$/.test(event.key)) setCount(Number(event.key));
+  else if (event.key === "n" || event.key === "N") newWords();
+});
+
+let frame;
+window.addEventListener("resize", () => {
+  cancelAnimationFrame(frame);
+  frame = requestAnimationFrame(layout);
+});
+
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(layout);
+
+/* ---------- start ---------- */
+
+syncRadios();
+newWords();
+</script>
+</body>
+</html>
