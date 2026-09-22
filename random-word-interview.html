@@ -51,11 +51,15 @@
 
   .stage {
     --gap: clamp(0.6rem, 1.6vw, 1.1rem);
-    --chrome: 13rem;
+    --chrome: 12rem;
+    --h: clamp(16rem, calc(100vh - var(--chrome)), 34rem);
     display: flex;
-    flex-direction: column;
     gap: var(--gap);
     margin-top: 1.5rem;
+  }
+
+  @supports (height: 100svh) {
+    .stage { --h: clamp(16rem, calc(100svh - var(--chrome)), 34rem); }
   }
 
   .tile {
@@ -63,6 +67,7 @@
     display: flex;
     align-items: flex-end;
     min-width: 0;
+    height: var(--h);
     padding: clamp(1rem, 2.4vw, 2rem);
     border: 0;
     border-radius: 0.9rem;
@@ -75,19 +80,8 @@
   .tile:hover { filter: brightness(0.96); }
   .tile:focus-visible { outline: 4px solid var(--focus); outline-offset: 3px; }
 
-  #word-tile {
-    background: var(--word-c);
-    height: clamp(8rem, calc((100vh - var(--chrome)) * 0.34), 15rem);
-  }
-  #question-tile {
-    background: var(--question-c);
-    height: clamp(12rem, calc((100vh - var(--chrome)) * 0.56), 24rem);
-  }
-
-  @supports (height: 100svh) {
-    #word-tile { height: clamp(8rem, calc((100svh - var(--chrome)) * 0.34), 15rem); }
-    #question-tile { height: clamp(12rem, calc((100svh - var(--chrome)) * 0.56), 24rem); }
-  }
+  #word-tile { flex: 1 1 0; background: var(--word-c); }
+  #question-tile { flex: 1.6 1 0; background: var(--question-c); }
 
   .tag {
     position: absolute;
@@ -147,6 +141,12 @@
     overflow: hidden;
     clip: rect(0 0 0 0);
     white-space: nowrap;
+  }
+
+  @media (max-width: 720px) {
+    .stage { flex-direction: column; }
+    .stage { --chrome: 15rem; --h: clamp(9rem, calc((100vh - var(--chrome)) / 2), 20rem); }
+    #word-tile, #question-tile { flex: 1 1 auto; }
   }
 
   @media (prefers-reduced-motion: reduce) {
