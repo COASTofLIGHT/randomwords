@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Random Word Interview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --mist: #EDF3F2;
+    --ink: #10303A;
+    --ink-soft: #456670;
+    --focus: #0B62A4;
+    --font: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --word-c: #A8D5CB;
+    --question-c: #A9CCEB;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--mist);
+    color: var(--ink);
+    font-family: var(--font);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  .page {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: clamp(1rem, 3vw, 2.25rem);
+  }
+
+  header h1 {
+    margin: 0;
+    font-size: clamp(1.7rem, 3.2vw, 2.5rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+  }
+
+  header p {
+    margin: 0.35rem 0 0;
+    color: var(--ink-soft);
+    font-size: 1rem;
+  }
+
+  .stage {
+    --gap: clamp(0.6rem, 1.6vw, 1.1rem);
+    --chrome: 12rem;
+    --h: clamp(16rem, calc(100vh - var(--chrome)), 34rem);
+    display: flex;
+    gap: var(--gap);
+    margin-top: 1.5rem;
+  }
+
+  @supports (height: 100svh) {
+    .stage { --h: clamp(16rem, calc(100svh - var(--chrome)), 34rem); }
+  }
+
+  .tile {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    min-width: 0;
+    height: var(--h);
+    padding: clamp(1rem, 2.4vw, 2rem);
+    border: 0;
+    border-radius: 0.9rem;
+    overflow: hidden;
+    color: var(--ink);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  .tile:hover { filter: brightness(0.96); }
+  .tile:focus-visible { outline: 4px solid var(--focus); outline-offset: 3px; }
+
+  #word-tile { flex: 1 1 0; background: var(--word-c); }
+  #question-tile { flex: 1.6 1 0; background: var(--question-c); }
+
+  .tag {
+    position: absolute;
+    top: 1.1rem;
+    left: 1.3rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    opacity: 0.5;
+  }
+
+  .word {
+    display: block;
+    width: 100%;
+    font-size: clamp(2.2rem, 5.4vw, 4.6rem);
+    font-weight: 700;
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+    overflow-wrap: normal;
+    hyphens: none;
+  }
+
+  .question {
+    display: block;
+    width: 100%;
+    font-size: clamp(1.7rem, 3.6vw, 3.1rem);
+    font-weight: 700;
+    line-height: 1.18;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+
+  .blank {
+    text-decoration: underline;
+    text-decoration-thickness: 0.08em;
+    text-underline-offset: 0.12em;
+  }
+
+  @keyframes settle {
+    from { opacity: 0; transform: translateY(0.4rem); }
+    to   { opacity: 1; transform: none; }
+  }
+  .word.fresh, .question.fresh { animation: settle 0.22s ease-out; }
+
+  .hint {
+    margin: 1.25rem 0 0;
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+  }
+
+  .sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  @media (max-width: 720px) {
+    .stage { flex-direction: column; }
+    .stage { --chrome: 15rem; --h: clamp(9rem, calc((100vh - var(--chrome)) / 2), 20rem); }
+    #word-tile, #question-tile { flex: 1 1 auto; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .word.fresh, .question.fresh { animation: none; }
+  }
+</style>
+</head>
+<body>
+<main class="page">
+  <header>
+    <h1>The random word interview</h1>
+    <p>Click the word for a new one. Click the question to move to the next.</p>
+  </header>
+
+  <div class="stage">
+    <button type="button" class="tile" id="word-tile" aria-label="Click for a new word">
+      <span class="tag" aria-hidden="true">Word</span>
+      <span class="word" id="word"></span>
+    </button>
+    <button type="button" class="tile" id="question-tile" aria-label="Click for the next question">
+      <span class="tag" aria-hidden="true">Question</span>
+      <span class="question" id="question"></span>
+    </button>
+  </div>
+
+  <p class="hint">Use the word to answer the question, however you like.</p>
+  <p class="sr" role="status" id="status"></p>
+</main>
+
+<script>
+/* ---------------------------------------------------------------
+   Word list: curated for a teen audience, not the full A2 object
+   list. Add or remove words here — one word per line, no trailing
+   comma needed on the last one.
+---------------------------------------------------------------- */
+const ALL_WORDS = [
+  "pizza", "Netflix", "hip hop", "comedy", "forests",
+  "ice cream", "table tennis", "free time", "mobile phones", "holidays"
+];
+
+const QUESTIONS = [
+  "Why do you think people like ____?",
+  "What do you think is the biggest advantage of ____?",
+  "Do you think there is / are too much / many ____ in life?",
+  "Should ____ be taught in schools?",
+  "What can we learn from ____?",
+  "If you could change one thing about ____, what would you change?",
+  "Is / Are ____ better with or without friends?",
+  "Will we need ____ in the future?",
+  "What ____ do you like best?",
+  "What would happen if there was / were no ____?",
+  "How has / have ____ changed in the last ten years?",
+  "Would you rather have more time or more ____?"
+];
+
+const wordTile = document.getElementById("word-tile");
+const questionTile = document.getElementById("question-tile");
+const wordEl = document.getElementById("word");
+const questionEl = document.getElementById("question");
+const statusEl = document.getElementById("status");
+
+function shuffle(list) {
+  for (let i = list.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [list[i], list[j]] = [list[j], list[i]];
+  }
+  return list;
+}
+
+/* ---------- word: draws from a shuffled deck so words don't repeat until the pool is used ---------- */
+
+let wordDeck = [];
+let currentWord = "";
+
+function nextWord() {
+  if (!wordDeck.length) wordDeck = shuffle(ALL_WORDS.slice());
+  let word = wordDeck.pop();
+  if (word === currentWord && wordDeck.length) word = wordDeck.pop();
+  currentWord = word;
+  wordEl.textContent = word;
+  wordEl.classList.remove("fresh");
+  void wordEl.offsetWidth;
+  wordEl.classList.add("fresh");
+  announce();
+}
+
+/* ---------- question: cycles through a shuffled order, then reshuffles and starts again ---------- */
+
+let order = shuffle(QUESTIONS.slice());
+let pos = 0;
+let finished = false;
+
+function renderQuestion(text) {
+  questionEl.innerHTML = text.replace(/____/g, '<span class="blank">____</span>');
+  questionEl.classList.remove("fresh");
+  void questionEl.offsetWidth;
+  questionEl.classList.add("fresh");
+}
+
+function showQuestion() {
+  renderQuestion(order[pos]);
+  announce();
+}
+
+function nextQuestion() {
+  if (finished) {
+    order = shuffle(QUESTIONS.slice());
+    pos = 0;
+    finished = false;
+  } else if (pos < order.length - 1) {
+    pos++;
+  } else {
+    finished = true;
+    questionEl.textContent = "End of interview \u2014 click for a new round.";
+    questionEl.classList.remove("fresh");
+    void questionEl.offsetWidth;
+    questionEl.classList.add("fresh");
+    announce();
+    return;
+  }
+  showQuestion();
+}
+
+function announce() {
+  statusEl.textContent = "Word: " + currentWord + ". Question: " + (finished ? "end of interview" : order[pos]);
+}
+
+wordTile.addEventListener("click", nextWord);
+questionTile.addEventListener("click", nextQuestion);
+
+document.addEventListener("keydown", (event) => {
+  if (event.ctrlKey || event.metaKey || event.altKey) return;
+  if (event.code === "Space" || event.code === "Enter") { event.preventDefault(); nextQuestion(); }
+  else if (event.key === "w" || event.key === "W") nextWord();
+});
+
+nextWord();
+showQuestion();
+</script>
+</body>
+</html>
