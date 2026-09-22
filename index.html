@@ -33,6 +33,16 @@
     padding: clamp(1rem, 3vw, 2.25rem);
   }
 
+  .back {
+    display: inline-block;
+    margin-bottom: 1rem;
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+    text-decoration: none;
+  }
+  .back:hover { text-decoration: underline; }
+  .back:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
   header h1 {
     margin: 0;
     font-size: clamp(1.9rem, 4vw, 3rem);
@@ -97,6 +107,8 @@
 </head>
 <body>
 <main class="page">
+  <a class="back" href="https://coastoflight.github.io/">&larr; COAST of LIGHT</a>
+
   <header>
     <h1>Random words</h1>
     <p>Word generators and memory games for the classroom.</p>
