@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Students</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --mist: #EDF3F2;
+    --ink: #10303A;
+    --ink-soft: #456670;
+    --line: #5F808A;
+    --sea: #17677A;
+    --sea-deep: #124F5E;
+    --focus: #0B62A4;
+    --font: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --tile-c: #F4B5A0;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+  }
+
+  body {
+    background: var(--mist);
+    color: var(--ink);
+    font-family: var(--font);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  .page {
+    max-width: 1000px;
+    height: 100vh;
+    height: 100dvh;
+    margin: 0 auto;
+    padding: clamp(0.85rem, 2.6vw, 2rem);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .back {
+    display: inline-block;
+    flex: 0 0 auto;
+    margin-bottom: 0.6rem;
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+    text-decoration: none;
+  }
+  .back:hover { text-decoration: underline; }
+  .back:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+  header { flex: 0 0 auto; }
+
+  header h1 {
+    margin: 0;
+    font-size: clamp(1.4rem, 3vw, 2.5rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+  }
+
+  header p {
+    margin: 0.3rem 0 0;
+    color: var(--ink-soft);
+    font-size: 1rem;
+  }
+
+  /* Controls */
+  .controls {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin: 0.85rem 0 0.85rem;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .field label {
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+
+  textarea#names {
+    width: 100%;
+    min-height: 3.2rem;
+    max-height: 5.5rem;
+    padding: 0.55rem 0.8rem;
+    border: 2px solid var(--line);
+    border-radius: 0.6rem;
+    background: #fff;
+    color: var(--ink);
+    font: inherit;
+    font-size: 0.95rem;
+    line-height: 1.4;
+    resize: vertical;
+  }
+  textarea#names:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1.75rem;
+  }
+
+  .group { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 0.9rem; }
+  .group-label { font-weight: 600; }
+
+  .choices { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .choices label { position: relative; display: block; }
+  .choices input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+  .choices span {
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border: 2px solid var(--line);
+    border-radius: 0.6rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+  }
+  .choices input:not(:checked):hover + span { border-color: var(--ink); }
+  .choices input:checked + span {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--mist);
+  }
+  .choices input:focus-visible + span {
+    outline: 3px solid var(--focus);
+    outline-offset: 3px;
+  }
+
+  .buttons { display: flex; gap: 0.6rem; }
+
+  .primary, .secondary {
+    height: 2.75rem;
+    padding: 0 1.6rem;
+    border: 0;
+    border-radius: 0.6rem;
+    font: inherit;
+    font-size: 1.05rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .primary { background: var(--sea); color: #fff; }
+  .primary:hover { background: var(--sea-deep); }
+  .primary:disabled { background: var(--line); cursor: not-allowed; }
+
+  .secondary {
+    background: transparent;
+    color: var(--ink);
+    border: 2px solid var(--line);
+  }
+  .secondary:hover { border-color: var(--ink); }
+
+  .primary:active:not(:disabled), .secondary:active { transform: translateY(1px); }
+  .primary:focus-visible, .secondary:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+
+  .error {
+    color: #8A2E1E;
+    font-size: 0.95rem;
+    font-weight: 600;
+    min-height: 1.2em;
+  }
+
+  /* Tile */
+  .tile {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: clamp(1rem, 3vw, 2rem);
+    border: 0;
+    border-radius: 0.9rem;
+    overflow: hidden;
+    background: var(--tile-c);
+    color: var(--ink);
+    font: inherit;
+    cursor: pointer;
+    text-align: center;
+  }
+  .tile:hover { filter: brightness(0.96); }
+  .tile:focus-visible { outline: 4px solid var(--focus); outline-offset: 3px; }
+  .tile:disabled { cursor: default; }
+
+  .tag {
+    position: absolute;
+    top: 1.1rem;
+    left: 1.3rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    opacity: 0.5;
+  }
+
+  .names-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.15em;
+    max-width: 100%;
+    max-height: 100%;
+    overflow: hidden;
+  }
+
+  .names-display .name {
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    max-width: 100%;
+    white-space: nowrap;
+  }
+
+  .names-display[hidden] { display: none; }
+
+  @keyframes settle {
+    from { opacity: 0; transform: translateY(0.4rem); }
+    to   { opacity: 1; transform: none; }
+  }
+  .fresh { animation: settle 0.22s ease-out; }
+
+  .status {
+    flex: 0 0 auto;
+    margin: 0.6rem 0 0;
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+  }
+
+  .sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fresh { animation: none; }
+  }
+
+  /* Short viewports (small windows, landscape phones): trim the chrome so
+     the tile — the part that actually needs the room — still gets it. */
+  @media (max-height: 480px) {
+    .page { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+    .back { margin-bottom: 0.3rem; font-size: 0.85rem; }
+    header p { display: none; }
+    header h1 { font-size: 1.15rem; }
+    .controls { gap: 0.4rem; margin: 0.5rem 0; }
+    textarea#names { min-height: 2.2rem; max-height: 2.6rem; font-size: 0.85rem; padding: 0.35rem 0.6rem; }
+    .row { gap: 0.4rem 1rem; }
+    .choices span { width: 2.1rem; height: 2.1rem; font-size: 0.95rem; }
+    .primary, .secondary { height: 2.1rem; padding: 0 1rem; font-size: 0.9rem; }
+    .error { font-size: 0.8rem; min-height: 1em; }
+    .status { font-size: 0.8rem; margin-top: 0.35rem; }
+    .tag { font-size: 0.75rem; top: 0.6rem; left: 0.8rem; }
+  }
+</style>
+</head>
+<body>
+<main class="page">
+  <a class="back" href="https://coastoflight.github.io/randomwords/">&larr; Random words</a>
+
+  <header>
+    <h1>Students</h1>
+    <p>Enter your class, then pick one at a time or in groups — everyone comes up once before anyone repeats.</p>
+  </header>
+
+  <div class="controls">
+    <div class="field">
+      <label for="names">Class list (one name per line, or separate with commas)</label>
+      <textarea id="names" placeholder="insert names"></textarea>
+    </div>
+
+    <div class="row">
+      <div class="group" role="radiogroup" aria-labelledby="size-label">
+        <span class="group-label" id="size-label">Students per pick</span>
+        <div class="choices" id="size-options"></div>
+      </div>
+      <div class="buttons">
+        <button type="button" class="primary" id="pick-btn">Pick</button>
+        <button type="button" class="secondary" id="reset-btn">Reset</button>
+      </div>
+    </div>
+    <p class="error" id="error"></p>
+  </div>
+
+  <button type="button" class="tile" id="tile" aria-label="Click to pick">
+    <span class="tag" aria-hidden="true">Students</span>
+    <span class="names-display" id="names-display"></span>
+  </button>
+
+  <p class="status" id="status-line"></p>
+  <p class="sr" role="status" id="status"></p>
+</main>
+
+<script>
+  const namesInput = document.getElementById('names');
+  const sizeOptions = document.getElementById('size-options');
+  const pickBtn = document.getElementById('pick-btn');
+  const resetBtn = document.getElementById('reset-btn');
+  const errorEl = document.getElementById('error');
+  const tile = document.getElementById('tile');
+  const namesDisplay = document.getElementById('names-display');
+  const statusLine = document.getElementById('status-line');
+  const statusEl = document.getElementById('status');
+
+  const MAX_SIZE = 3;
+
+  let groupSize = loadGroupSize();
+  let roster = [];       // the class list this cycle was built from
+  let groups = [];       // shuffled array of groups for the current cycle
+  let deck = [];         // groups left to draw this cycle
+  let pickedCount = 0;   // students drawn so far this cycle
+
+  function shuffle(list) {
+    for (let i = list.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [list[i], list[j]] = [list[j], list[i]];
+    }
+    return list;
+  }
+
+  function parseNames() {
+    return namesInput.value
+      .split(/[\n,]/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+
+  // Split a shuffled roster into groups of exactly `size`. If it doesn't divide
+  // evenly, the last group is just whatever's left over (e.g. a final pair or trio).
+  function makeGroups(names, size) {
+    const out = [];
+    for (let i = 0; i < names.length; i += size) {
+      out.push(names.slice(i, i + size));
+    }
+    return out;
+  }
+
+  function newCycle() {
+    groups = shuffle(makeGroups(shuffle(roster.slice()), groupSize));
+    deck = groups.slice();
+    pickedCount = 0;
+  }
+
+  function startRound() {
+    const names = parseNames();
+    if (names.length === 0) {
+      errorEl.textContent = 'Add at least one name to the class list.';
+      setEmptyState();
+      return false;
+    }
+    if (names.length < groupSize) {
+      errorEl.textContent = 'You have fewer students than that group size \u2014 pick a smaller size or add more names.';
+      setEmptyState();
+      return false;
+    }
+    errorEl.textContent = '';
+    roster = names;
+    newCycle();
+    pickBtn.disabled = false;
+    tile.disabled = false;
+    showPlaceholder();
+    updateStatus();
+    return true;
+  }
+
+  function setEmptyState() {
+    pickBtn.disabled = true;
+    tile.disabled = true;
+    showPlaceholder();
+    statusLine.textContent = '';
+    roster = []; groups = []; deck = [];
+  }
+
+  function showPlaceholder() {
+    renderNames(['?']);
+  }
+
+  function renderNames(names) {
+    namesDisplay.innerHTML = names.map((n) => '<span class="name"></span>').join('');
+    [...namesDisplay.children].forEach((el, i) => { el.textContent = names[i]; });
+    fitNames();
+  }
+
+  // Shrinks (or grows) the name(s) to the largest size that fits the tile,
+  // both in total height (for stacked groups) and per-line width.
+  function fitNames() {
+    const items = [...namesDisplay.children];
+    if (!items.length) return;
+
+    const style = getComputedStyle(tile);
+    const innerW = tile.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+    const innerH = tile.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+    if (innerW <= 0 || innerH <= 0) return;
+
+    items.forEach((el) => { el.style.whiteSpace = 'nowrap'; });
+
+    let size = Math.min(innerH / items.length * 0.78, innerW * 0.26, 170);
+    size = Math.max(size, 14);
+    items.forEach((el) => { el.style.fontSize = size + 'px'; });
+
+    let guard = 0;
+    while (guard++ < 60 && size > 13) {
+      const totalH = namesDisplay.scrollHeight;
+      const maxLineW = Math.max(...items.map((el) => el.scrollWidth));
+      if (totalH <= innerH + 1 && maxLineW <= innerW + 1) break;
+      size *= 0.94;
+      items.forEach((el) => { el.style.fontSize = size + 'px'; });
+    }
+
+    // A single very long name at the size floor: let it wrap rather than overflow.
+    if (items.length === 1 && items[0].scrollWidth > innerW + 1) {
+      items[0].style.whiteSpace = 'normal';
+    }
+  }
+
+  function updateStatus() {
+    if (!roster.length) return;
+    const totalGroups = groups.length;
+    if (groupSize === 1) {
+      statusLine.textContent = pickedCount + ' of ' + roster.length + ' students picked this round.';
+    } else {
+      statusLine.textContent = (totalGroups - deck.length) + ' of ' + totalGroups + ' groups picked this round.';
+    }
+    statusEl.textContent = statusLine.textContent;
+  }
+
+  function pick() {
+    // If the class list or group size changed since the last round, start fresh instead of drawing.
+    const names = parseNames();
+    const sameRoster = names.length === roster.length && names.every((n, i) => n === roster[i]);
+    if (!sameRoster) {
+      if (!startRound()) return;
+    }
+    if (!roster.length) return;
+
+    // Cycle keeps going indefinitely: once everyone's had a turn, reshuffle
+    // and carry straight on, rather than stopping and hiding the last pick.
+    if (!deck.length) newCycle();
+
+    const group = deck.pop();
+    pickedCount += group.length;
+    renderNames(group);
+    namesDisplay.classList.remove('fresh');
+    void namesDisplay.offsetWidth;
+    namesDisplay.classList.add('fresh');
+
+    updateStatus();
+  }
+
+  function reset() {
+    startRound();
+  }
+
+  function loadGroupSize() {
+    try {
+      const value = parseInt(localStorage.getItem('students.groupSize'), 10);
+      if (value >= 1 && value <= MAX_SIZE) return value;
+    } catch (e) { /* storage unavailable */ }
+    return 1;
+  }
+  function saveGroupSize() {
+    try { localStorage.setItem('students.groupSize', String(groupSize)); } catch (e) { /* ignore */ }
+  }
+
+
+  for (let n = 1; n <= MAX_SIZE; n++) {
+    const label = document.createElement('label');
+    label.innerHTML = '<input type="radio" name="size" value="' + n + '"><span>' + n + '</span>';
+    label.querySelector('input').addEventListener('change', () => {
+      groupSize = n;
+      saveGroupSize();
+      startRound();
+    });
+    sizeOptions.appendChild(label);
+  }
+  function syncSizeRadios() {
+    sizeOptions.querySelectorAll('input').forEach((input) => {
+      input.checked = Number(input.value) === groupSize;
+    });
+  }
+
+  pickBtn.addEventListener('click', pick);
+  tile.addEventListener('click', pick);
+  resetBtn.addEventListener('click', reset);
+  namesInput.addEventListener('change', () => { startRound(); });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
+    const tag = document.activeElement && document.activeElement.tagName;
+    if (tag === 'TEXTAREA' || tag === 'INPUT') return;
+    if (event.code === 'Space' || event.code === 'Enter') { event.preventDefault(); pick(); }
+    else if (event.key === 'r' || event.key === 'R') reset();
+  });
+
+  syncSizeRadios();
+  startRound();
+
+  let resizeFrame;
+  function scheduleRefit() {
+    cancelAnimationFrame(resizeFrame);
+    resizeFrame = requestAnimationFrame(fitNames);
+  }
+  window.addEventListener('resize', scheduleRefit);
+  window.addEventListener('orientationchange', scheduleRefit);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitNames);
+  if (window.ResizeObserver) new ResizeObserver(scheduleRefit).observe(tile);
+</script>
+</body>
+</html>
