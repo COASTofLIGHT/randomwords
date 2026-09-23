@@ -44,6 +44,16 @@
     line-height: 1.05;
   }
 
+  .back {
+    display: inline-block;
+    margin-bottom: 1rem;
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+    text-decoration: none;
+  }
+  .back:hover { text-decoration: underline; }
+  .back:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
   header p {
     margin: 0.35rem 0 0;
     color: var(--ink-soft);
@@ -220,6 +230,8 @@
 </head>
 <body>
 <main class="page">
+  <a class="back" href="https://coastoflight.github.io/randomwords/">&larr; Random words</a>
+
   <header>
     <h1>Word picker</h1>
     <p>Objects and animals from the Cambridge A2 Key list.</p>
