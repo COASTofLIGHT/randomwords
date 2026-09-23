@@ -457,6 +457,8 @@
   }
 
   function pick() {
+    if (spinning) return;
+
     // If the class list or group size changed since the last round, start fresh instead of drawing.
     const names = parseNames();
     const sameRoster = names.length === roster.length && names.every((n, i) => n === roster[i]);
@@ -471,15 +473,90 @@
 
     const group = deck.pop();
     pickedCount += group.length;
-    renderNames(group);
-    namesDisplay.classList.remove('fresh');
-    void namesDisplay.offsetWidth;
-    namesDisplay.classList.add('fresh');
+
+    if (groupSize === 1) {
+      animateSingle(group[0]);
+    } else {
+      renderNames(group);
+      namesDisplay.classList.remove('fresh');
+      void namesDisplay.offsetWidth;
+      namesDisplay.classList.add('fresh');
+    }
 
     updateStatus();
   }
 
+  // Scramble-and-settle reveal for a single pick, in the same style as
+  // Ask the Turning Tide: random letters flicker, then resolve left-to-right
+  // into the chosen name. Groups of 2-3 skip this and reveal instantly.
+  let spinning = false;
+  const SCRAMBLE_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ      ';
+
+  function animateSingle(name) {
+    spinning = true;
+    pickBtn.disabled = true;
+    tile.disabled = true;
+
+    namesDisplay.innerHTML = '<span class="name"></span>';
+    const el = namesDisplay.firstElementChild;
+
+    // Size for the final text first, then hold that size fixed through the scramble
+    // so the tile doesn't jump around as random letters swap in and out.
+    el.textContent = name;
+    fitNames();
+
+    const len = name.length;
+    const scrambleDuration = 900;
+    const start = performance.now();
+
+    function randomLine() {
+      let out = '';
+      for (let i = 0; i < len; i++) {
+        out += name[i] === ' ' ? ' ' : SCRAMBLE_CHARS[Math.floor(Math.random() * SCRAMBLE_CHARS.length)];
+      }
+      return out;
+    }
+
+    function tick() {
+      if (performance.now() - start < scrambleDuration) {
+        el.textContent = randomLine();
+        requestAnimationFrame(tick);
+      } else {
+        settlePhase();
+      }
+    }
+
+    function settlePhase() {
+      const revealSteps = 10;
+      let step = 0;
+      function revealTick() {
+        step++;
+        const revealCount = Math.floor((len * step) / revealSteps);
+        let out = '';
+        for (let i = 0; i < len; i++) {
+          out += (i < revealCount || name[i] === ' ') ? name[i] : SCRAMBLE_CHARS[Math.floor(Math.random() * SCRAMBLE_CHARS.length)];
+        }
+        el.textContent = out;
+        if (step < revealSteps) {
+          setTimeout(revealTick, 45);
+        } else {
+          el.textContent = name;
+          namesDisplay.classList.remove('fresh');
+          void namesDisplay.offsetWidth;
+          namesDisplay.classList.add('fresh');
+          spinning = false;
+          pickBtn.disabled = false;
+          tile.disabled = false;
+        }
+      }
+      revealTick();
+    }
+
+    requestAnimationFrame(tick);
+  }
+
   function reset() {
+    if (spinning) return;
     startRound();
   }
 
@@ -499,6 +576,7 @@
     const label = document.createElement('label');
     label.innerHTML = '<input type="radio" name="size" value="' + n + '"><span>' + n + '</span>';
     label.querySelector('input').addEventListener('change', () => {
+      if (spinning) return;
       groupSize = n;
       saveGroupSize();
       startRound();
@@ -514,7 +592,7 @@
   pickBtn.addEventListener('click', pick);
   tile.addEventListener('click', pick);
   resetBtn.addEventListener('click', reset);
-  namesInput.addEventListener('change', () => { startRound(); });
+  namesInput.addEventListener('change', () => { if (!spinning) startRound(); });
 
   document.addEventListener('keydown', (event) => {
     if (event.ctrlKey || event.metaKey || event.altKey) return;
